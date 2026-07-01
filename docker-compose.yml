@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # 1. MySQL Database Server Container
+  parking-db:
+    image: mysql:8.0
+    container_name: campus-parking-db
+    restart: always
+    environment:
+      MYSQL_DATABASE: campus_parking_db
+      MYSQL_USER: parking_user
+      MYSQL_PASSWORD: parking_secure_pass_2026
+      MYSQL_ROOT_PASSWORD: root_secure_pass_2026
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - campus-network
+
+  # 2. Spring Boot Backend Container
+  parking-backend:
+    build:
+      context: ./backend-spring-boot
+    container_name: campus-parking-backend
+    restart: always
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://parking-db:3306/campus_parking_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=parking_user
+      - SPRING_DATASOURCE_PASSWORD=parking_secure_pass_2026
+    depends_on:
+      - parking-db
+    networks:
+      - campus-network
+
+  # 3. React Frontend Container
+  parking-frontend:
+    build:
+      context: .
+    container_name: campus-parking-frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - parking-backend
+    networks:
+      - campus-network
+
+volumes:
+  mysql_data:
+
+networks:
+  campus-network:
+    driver: bridge
